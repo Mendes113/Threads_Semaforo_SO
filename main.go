@@ -11,7 +11,7 @@ type conta struct {
 }
 
 var wg sync.WaitGroup
-var semaforo = make(chan struct{}, 3) // Semáforo com capacidade 3
+var semaforo = make(chan struct{}, 5) // Semáforo com capacidade 3
 
 func (c *conta) saque(valor float64) {
 	semaforo <- struct{}{}
@@ -63,40 +63,42 @@ func main() {
 	for _, c := range contas {
 		c.printTabelaDeSaldos()
 	}
+	finalWg := sync.WaitGroup{}
 
-	// Additional transactions
-	for i := 1; i <= 5; i++ {
-		finalWg := sync.WaitGroup{}
-		finalWg.Add(1)
-		go func() {
-			c1 := conta{saldo: conta1.consultaSaldo(), nome: conta1.nome}
-			c1.transferencia(500, &conta2)
-			
-		}()
+	// Dentro do loop
+for i := 1; i <= 5; i++ {
+	finalWg.Add(1)
+	go func() {
+		defer finalWg.Done()  // Chame Done() para indicar que a goroutine terminou
+		c1 := conta{saldo: conta1.consultaSaldo(), nome: conta1.nome}
+		c1.transferencia(500, &conta2)
+	}()
 
-		finalWg.Add(1)
-		go func() {
-			c3 := conta{saldo: conta3.consultaSaldo(), nome: conta3.nome}
-			c3.transferencia(500, &conta4)
-			finalWg.Done()
-			}()
+	finalWg.Add(1)
+	go func() {
+		defer finalWg.Done()  // Chame Done() para indicar que a goroutine terminou
+		c3 := conta{saldo: conta3.consultaSaldo(), nome: conta3.nome}
+		c3.transferencia(500, &conta4)
+	}()
 
-		finalWg.Add(1)
-		go func() {
-			c1 := conta{saldo: conta1.consultaSaldo(), nome: conta1.nome}
-			c1.saque(100)
-			finalWg.Done()
-		}()
+	finalWg.Add(1)
+	go func() {
+		defer finalWg.Done()  // Chame Done() para indicar que a goroutine terminou
+		c1 := conta{saldo: conta1.consultaSaldo(), nome: conta1.nome}
+		c1.saque(100)
+	}()
 
-		finalWg.Add(1)
-		go func() {
-			c2 := conta{saldo: conta2.consultaSaldo(), nome: conta2.nome}
-			c2.saque(200)
-			finalWg.Done()
-		}()
+	finalWg.Add(1)
+	go func() {
+		defer finalWg.Done()  // Chame Done() para indicar que a goroutine terminou
+		c2 := conta{saldo: conta2.consultaSaldo(), nome: conta2.nome}
+		c2.saque(200)
+	}()
+}
+
 			
 		finalWg.Wait() // Wait for this round of transactions to finish
-		// Print final balances
+	
 		fmt.Println("---------------------------------------------------")
 		fmt.Printf("Saldo final da conta %s: %.2f\n", conta1.nome, conta1.consultaSaldo())
 		fmt.Printf("Saldo final da conta %s: %.2f\n", conta2.nome, conta2.consultaSaldo())
@@ -104,7 +106,7 @@ func main() {
 		fmt.Printf("Saldo final da conta %s: %.2f\n", conta4.nome, conta4.consultaSaldo())
 		
 
-	}
+	
 
 	// // Print the final account balances
 	// fmt.Printf("Saldo final da conta %s: %.2f\n", conta1.nome, conta1.consultaSaldo())
